@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+
+# Environment and local secrets
+/.env
+/.env.local
+**/.env
+**/.env.local
+
+# Logs and generated run output
+*.log
+log/
+logs/
+output/
+outputs/
+run-output/
+run-outputs/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor and IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~

@@ -1,0 +1,17 @@
+{
+  "name": "gpt-eos-agent",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Local GPT/EOS engineering agent scaffold.",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node src/index.mjs",
+    "analyze": "node src/index.mjs",
+    "eek": "node src/eek-cli.mjs",
+    "test": "node tests/smoke-test.mjs && node tests/eek-test.mjs"
+  },
+  "dependencies": {}
+}
