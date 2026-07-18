@@ -1,8 +1,9 @@
 #!/usr/bin/env node
-
+import "dotenv/config";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { runEek } from "./eek/orchestrator.mjs";
+import { createTraceLogger } from "./eek/trace-log.mjs";
 
 main().catch((error) => {
   console.error(`EEK failed: ${error.message}`);
@@ -20,6 +21,7 @@ async function main() {
   const bugReport = [options.error, options.file ? await readFile(path.resolve(options.file), "utf8") : ""]
     .filter(Boolean)
     .join("\n\n");
+  const traceLogger = await createTraceLogger(options.traceFile);
   const result = await runEek({
     projectPath: options.project,
     bugReport,
@@ -28,7 +30,8 @@ async function main() {
     timeoutMs: options.timeoutMs,
     maxRetries: options.maxRetries,
     dryRun: options.dryRun,
-    apply: options.apply
+    apply: options.apply,
+    traceLogger
   });
   console.log(result.report);
   if (result.status === "escalated") process.exitCode = 2;
@@ -45,6 +48,7 @@ function parseArgs(args) {
     maxRetries: 3,
     project: process.cwd(),
     timeoutMs: 60_000,
+    traceFile: ".eek-trace.jsonl",
     validate: ""
   };
 
@@ -60,6 +64,7 @@ function parseArgs(args) {
     else if (arg === "--validate") options.validate = required(args, ++index, arg);
     else if (arg === "--max-retries") options.maxRetries = positiveInt(required(args, ++index, arg), 3);
     else if (arg === "--timeout-ms") options.timeoutMs = positiveInt(required(args, ++index, arg), 60_000);
+    else if (arg === "--trace-file") options.traceFile = required(args, ++index, arg);
     else options.error += `${options.error ? " " : ""}${arg}`;
   }
   return options;

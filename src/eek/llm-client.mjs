@@ -1,7 +1,7 @@
 export function createLlmClient({
   apiKey = process.env.OPENAI_API_KEY,
   model = process.env.GPT_MODEL || process.env.OPENAI_MODEL,
-  endpoint = "https://api.openai.com/v1/responses"
+  endpoint = "https://integrate.api.nvidia.com/v1/chat/completions"
 } = {}) {
   return {
     configured: Boolean(apiKey && model),
@@ -15,7 +15,14 @@ export function createLlmClient({
           Authorization: `Bearer ${apiKey}`,
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({ model, instructions, input, max_output_tokens: maxOutputTokens })
+        body: JSON.stringify({
+          model,
+          messages: [
+            { role: "system", content: instructions },
+            { role: "user", content: input }
+          ],
+          max_tokens: maxOutputTokens
+        })
       });
       const text = await response.text();
       if (!response.ok) throw new Error(`LLM request failed with ${response.status}: ${redact(text)}`);
@@ -27,14 +34,7 @@ export function createLlmClient({
 }
 
 function extractText(payload) {
-  if (typeof payload.output_text === "string" && payload.output_text.trim()) return payload.output_text;
-  const parts = [];
-  for (const item of payload.output || []) {
-    for (const content of item.content || []) {
-      if (content.type === "output_text" && content.text) parts.push(content.text);
-    }
-  }
-  return parts.join("\n").trim();
+  return payload?.choices?.[0]?.message?.content || "";
 }
 
 function redact(value) {

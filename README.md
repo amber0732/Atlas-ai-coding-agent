@@ -118,4 +118,4 @@ The agent is intentionally strict:
 
 ## API Note
 
-The CLI calls the OpenAI Responses API endpoint `https://api.openai.com/v1/responses` with `model`, `instructions`, and `input`.
+The CLI calls the standard OpenAI Chat Completions API endpoint `https://api.openai.com/v1/chat/completions` using the `messages` array payload format.

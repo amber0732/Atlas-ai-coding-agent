@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-
+import "dotenv/config";
 import { access, readFile, readdir, stat } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -77,7 +77,7 @@ async function main() {
     DEFAULT_MAX_OUTPUT_TOKENS
   );
 
-  const response = await fetch("https://api.openai.com/v1/responses", {
+  const response = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: {
       "Authorization": `Bearer ${apiKey}`,
@@ -85,9 +85,11 @@ async function main() {
     },
     body: JSON.stringify({
       model,
-      instructions,
-      input: finalInput,
-      max_output_tokens: maxOutputTokens
+      messages: [
+        { role: "system", content: instructions },
+        { role: "user", content: finalInput }
+      ],
+      max_tokens: maxOutputTokens
     })
   });
 
@@ -324,20 +326,7 @@ Required behavior:
 }
 
 function extractResponseText(payload) {
-  if (typeof payload.output_text === "string" && payload.output_text.trim()) {
-    return payload.output_text;
-  }
-
-  const parts = [];
-  for (const item of payload.output || []) {
-    for (const content of item.content || []) {
-      if (content.type === "output_text" && content.text) {
-        parts.push(content.text);
-      }
-    }
-  }
-
-  return parts.join("\n").trim() || JSON.stringify(payload, null, 2);
+  return payload?.choices?.[0]?.message?.content || JSON.stringify(payload, null, 2);
 }
 
 function parseInteger(value, fallback) {

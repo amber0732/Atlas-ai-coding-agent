@@ -21,14 +21,15 @@ export async function runSpecialists({ llmClient, bugReport, triageResult, evide
       priorValidationFailures: priorFailures
     }, null, 2);
 
+    let raw = null;
     try {
-      const raw = await llmClient.complete({
+      raw = await llmClient.complete({
         instructions: `${KERNEL_RULES}\nYou are Specialist ${index + 1}. Produce an independent diagnosis and repair candidate.\n\nReturn JSON with exactly these fields:\n{\"diagnosis\": string, \"root_cause\": string, \"fix_summary\": string, \"edits\": [{\"path\": string, \"before\": string, \"after\": string}], \"validation_commands\": [string], \"confidence\": \"low\"|\"medium\"|\"high\"}`,
         input
       });
       return { ...parseCandidate(raw), specialist: index + 1, raw };
     } catch (error) {
-      return { specialist: index + 1, error: error.message };
+      return { specialist: index + 1, error: error.message, raw };
     }
   }));
 

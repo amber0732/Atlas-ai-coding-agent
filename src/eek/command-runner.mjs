@@ -5,6 +5,7 @@ import { promisify } from "node:util";
 const execFileAsync = promisify(execFile);
 const DEFAULT_TIMEOUT_MS = 60_000;
 const DEFAULT_MAX_OUTPUT_CHARS = 30_000;
+const FULL_OUTPUT_MAX_BUFFER_CHARS = 10_000_000;
 
 export async function runCommand({
   command,
@@ -29,7 +30,9 @@ export async function runCommand({
       cwd,
       env: { ...process.env, ...env },
       timeout: timeoutMs,
-      maxBuffer: Math.max(maxOutputChars * 2, 100_000),
+      maxBuffer: maxOutputChars === null
+        ? FULL_OUTPUT_MAX_BUFFER_CHARS
+        : Math.max(maxOutputChars * 2, 100_000),
       windowsHide: true
     });
     return normalizeResult({
@@ -69,6 +72,7 @@ function normalizeResult(result) {
 
 function trimOutput(value, maxChars) {
   const text = String(value || "");
+  if (maxChars === null) return text;
   if (text.length <= maxChars) return text;
   return `${text.slice(0, maxChars)}\n...[output truncated]`;
 }

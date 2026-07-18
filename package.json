@@ -13,5 +13,7 @@
     "eek": "node src/eek-cli.mjs",
     "test": "node tests/smoke-test.mjs && node tests/eek-test.mjs"
   },
-  "dependencies": {}
+  "dependencies": {
+    "dotenv": "^17.4.2"
+  }
 }

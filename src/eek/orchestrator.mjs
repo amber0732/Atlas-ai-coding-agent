@@ -10,20 +10,27 @@ export async function runEek({
   projectPath,
   bugReport,
   reproCommand = "npm test",
+  specialistCount = 2,
   validationCommand = reproCommand,
   files = [],
   timeoutMs = 60_000,
   maxRetries = 3,
   dryRun = false,
   apply = false,
-  llmClient = createLlmClient()
+  llmClient = createLlmClient(),
+  traceLogger = null
 }) {
   const phaseLog = [];
-  const record = (phase, details = {}) => phaseLog.push({ at: new Date().toISOString(), phase, ...details });
+  const record = async (phase, details = {}) => {
+    phaseLog.push({ at: new Date().toISOString(), phase, ...details });
+    if (traceLogger) {
+      await traceLogger.record(phase, details);
+    }
+  };
   const triageResult = triage(bugReport);
-  record("triage", triageResult);
+  await record("triage", triageResult);
   const evidence = await collectEvidence({ projectPath, bugReport, reproCommand, files, timeoutMs });
-  record("evidence_collected", {
+  await record("evidence_collected", {
     reproduction: evidence.reproduction,
     gitStatus: evidence.gitStatus,
     gitDiff: evidence.gitDiff,
@@ -41,12 +48,12 @@ export async function runEek({
   }
 
   if (!evidence.reproducible) {
-    record("escalation", { reason: "Evidence collection could not reproduce a failing command." });
+    await record("escalation", { reason: "Evidence collection could not reproduce a failing command." });
     return blockedResult({ triageResult, evidence, rounds: 0, reason: "Evidence collection could not reproduce a failing command.", phaseLog });
   }
 
   if (!llmClient || llmClient.configured === false || typeof llmClient.complete !== "function") {
-    record("escalation", { reason: "No language-model client is configured." });
+    await record("escalation", { reason: "No language-model client is configured." });
     return blockedResult({ triageResult, evidence, rounds: 0, reason: "No language-model client is configured.", phaseLog });
   }
 
@@ -54,7 +61,7 @@ export async function runEek({
   let lastValidations = [];
   for (let round = 1; round <= maxRetries; round += 1) {
     const candidates = await runSpecialists({ llmClient, bugReport, triageResult, evidence, priorFailures });
-    record("specialists_completed", {
+    await record("specialists_completed", {
       round,
       count: candidates.length,
       failures: candidates.filter((candidate) => candidate.error).map((candidate) => candidate.error)
@@ -69,7 +76,19 @@ export async function runEek({
         timeoutMs
       });
       lastValidations.push({ candidate, validation });
-      record("candidate_validated", {
+
+      if (traceLogger) {
+        await traceLogger.record("candidate_trace", {
+          round,
+          specialist: candidate.specialist,
+          raw: candidate.raw,
+          edits: candidate.edits,
+          editResults: validation.editResults,
+          validation: validation.testRun
+        });
+      }
+
+      await record("candidate_validated", {
         round,
         specialist: candidate.specialist,
         validation
@@ -78,7 +97,7 @@ export async function runEek({
 
     const arbiterResult = arbitrate(lastValidations.map(({ candidate, validation }) => ({ candidate, validation, verified: validation.verified })));
     if (arbiterResult) {
-      record("arbitration", {
+      await record("arbitration", {
         round,
         verifiedCount: arbiterResult.verifiedCount,
         rationale: arbiterResult.rationale
@@ -87,12 +106,12 @@ export async function runEek({
       if (apply) {
         commitResult = await commitCandidate({ projectPath, candidate: arbiterResult.selected.candidate, validationCommand, timeoutMs });
         if (!commitResult.applied) {
-          record("escalation", { reason: commitResult.reason || "The selected fix failed its final validation and was restored." });
+          await record("escalation", { reason: commitResult.reason || "The selected fix failed its final validation and was restored." });
           return blockedResult({ triageResult, evidence, rounds: round, reason: commitResult.reason || "The selected fix failed its final validation and was restored.", phaseLog });
         }
-        record("change_applied", { round, commitResult });
+        await record("change_applied", { round, commitResult });
       }
-      record("completion", { status: "verified", round });
+      await record("completion", { status: "verified", round });
       return {
         status: "verified",
         report: renderReport({ status: "verified", triageResult, evidence, rounds: round, arbiterResult, commitResult }),
@@ -113,10 +132,10 @@ export async function runEek({
       stdout: validation.execution?.stdout,
       stderr: validation.execution?.stderr
     }));
-    record("retry", { round, failures: priorFailures });
+    await record("retry", { round, failures: priorFailures });
   }
 
-  record("escalation", { reason: `All candidates failed grounded validation after ${maxRetries} retry round${maxRetries === 1 ? "" : "s"}. Human review is required.` });
+  await record("escalation", { reason: `All candidates failed grounded validation after ${maxRetries} retry round${maxRetries === 1 ? "" : "s"}. Human review is required.` });
   return blockedResult({
     triageResult,
     evidence,
