@@ -16,7 +16,8 @@ export async function GET(request: NextRequest) {
   try {
     const clientId = process.env.GOOGLE_CLIENT_ID || "";
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET || "";
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const { origin } = new URL(request.url);
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || origin;
 
     // 1. Swap auth code for Google access token
     const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
