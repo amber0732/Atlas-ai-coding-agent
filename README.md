@@ -1,6 +1,6 @@
-# GPT EOS Agent
+# ATLAS AI CODING AGENT
 
-This folder contains your first **GPT** engineering agent, powered by the EOS v2.0 instruction system.
+This folder contains your first **AI** engineering agent, powered by the EOS v1.0 instruction system.
 
 It now also includes **Engineering Execution Kernel v3.0 (EEK)**, a real error diagnosis and repair pipeline. EEK runs a supplied reproduction command, captures its output, asks independent specialists for repair candidates, validates candidates against the real project, and reports only grounded results.
 
