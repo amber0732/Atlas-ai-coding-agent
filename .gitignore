@@ -1,11 +1,28 @@
 # Dependencies
 node_modules/
+.pnp
+.pnp.js
 
-# Environment and local secrets
-/.env
-/.env.local
-**/.env
-**/.env.local
+# Next.js build outputs
+.next/
+out/
+build/
+dist/
+
+# Security & Secrets (STRICTLY IGNORED)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.pem
+*.key
+
+# Local Data Stores & Encrypted User Tokens
+data/
+data/users.json
+*.sqlite
+*.db
 
 # Logs and generated run output
 *.log
@@ -16,14 +33,13 @@ outputs/
 run-output/
 run-outputs/
 
-# OS files
+# OS & IDE files
 .DS_Store
 Thumbs.db
 desktop.ini
-
-# Editor and IDE files
-.idea/
+*.pem
 .vscode/
+.idea/
 *.swp
 *.swo
 *~

@@ -1,19 +1,50 @@
 {
-  "name": "gpt-eos-agent",
+  "name": "atlas-ai-coding-agent",
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Local GPT/EOS engineering agent scaffold.",
+  "description": "Autonomous AI coding agent with native GitHub tool orchestration and real-time grounding.",
   "engines": {
     "node": ">=18"
   },
   "scripts": {
-    "start": "node src/index.mjs",
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "server": "node server.js",
     "analyze": "node src/index.mjs",
     "eek": "node src/eek-cli.mjs",
-    "test": "node tests/smoke-test.mjs && node tests/eek-test.mjs"
+    "ask": "node simple-ask.mjs",
+    "test": "node tests/smoke-test.mjs && node tests/eek-test.mjs && node tests/auth-test.mjs && node tests/search-test.mjs"
   },
   "dependencies": {
-    "dotenv": "^17.4.2"
+    "@octokit/rest": "^22.0.1",
+    "@radix-ui/react-slot": "^1.2.3",
+    "@tavily/core": "^0.7.7",
+    "bcryptjs": "^3.0.3",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "lucide-react": "^0.468.0",
+    "next": "^14.2.15",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tailwind-merge": "^2.5.5",
+    "tailwindcss-animate": "^1.0.7"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^20.17.10",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.49",
+    "puppeteer-core": "^25.8.0",
+    "tailwindcss": "^3.4.16",
+    "typescript": "^5.7.2",
+    "untun": "^0.2.2"
   }
 }
