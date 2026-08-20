@@ -11,14 +11,20 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ authenticated: false, user: null });
     }
 
-    const payload = verifySessionToken(sessionToken);
+    const payload = verifySessionToken(sessionToken) as any;
     if (!payload || !payload.userId) {
       return NextResponse.json({ authenticated: false, user: null });
     }
 
-    const user = findUserById(payload.userId);
+    let user = findUserById(payload.userId);
     if (!user) {
-      return NextResponse.json({ authenticated: false, user: null });
+      user = {
+        id: payload.userId,
+        name: payload.name || payload.email?.split('@')[0] || 'User',
+        email: payload.email,
+        encryptedGitHubToken: null,
+        createdAt: payload.createdAt || new Date().toISOString(),
+      };
     }
 
     return NextResponse.json({

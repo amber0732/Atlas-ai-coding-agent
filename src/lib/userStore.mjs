@@ -2,36 +2,59 @@
 import fs from 'fs';
 import path from 'path';
 
-const DB_FILE = path.join(process.cwd(), 'data', 'users.json');
+// On Vercel / AWS Lambda, use writable /tmp; on local dev, use ./data
+const DATA_DIR = (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME)
+  ? path.join('/tmp', 'data')
+  : path.join(process.cwd(), 'data');
+
+const DB_FILE = path.join(DATA_DIR, 'users.json');
 
 function ensureDB() {
-  const dir = path.dirname(DB_FILE);
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  if (!fs.existsSync(DB_FILE)) fs.writeFileSync(DB_FILE, JSON.stringify([]));
+  try {
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+    }
+    if (!fs.existsSync(DB_FILE)) {
+      fs.writeFileSync(DB_FILE, JSON.stringify([]), 'utf-8');
+    }
+  } catch (err) {
+    console.error('[UserStore Error] ensureDB failed:', err);
+  }
 }
 
 export function getUsers() {
   ensureDB();
   try {
-    return JSON.parse(fs.readFileSync(DB_FILE, 'utf-8'));
-  } catch {
+    if (fs.existsSync(DB_FILE)) {
+      const data = fs.readFileSync(DB_FILE, 'utf-8');
+      return JSON.parse(data);
+    }
+    return [];
+  } catch (err) {
+    console.error('[UserStore Error] getUsers failed:', err);
     return [];
   }
 }
 
 export function saveUsers(users) {
   ensureDB();
-  fs.writeFileSync(DB_FILE, JSON.stringify(users, null, 2));
+  try {
+    fs.writeFileSync(DB_FILE, JSON.stringify(users, null, 2), 'utf-8');
+  } catch (err) {
+    console.error('[UserStore Error] saveUsers failed:', err);
+  }
 }
 
 export function findUserByEmail(email) {
+  if (!email) return null;
   const users = getUsers();
-  return users.find((u) => u.email.toLowerCase() === email.toLowerCase());
+  return users.find((u) => u.email && u.email.toLowerCase() === email.toLowerCase()) || null;
 }
 
 export function findUserById(id) {
+  if (!id) return null;
   const users = getUsers();
-  return users.find((u) => u.id === id);
+  return users.find((u) => u.id === id) || null;
 }
 
 export function createUser(userData) {

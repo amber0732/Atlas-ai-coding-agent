@@ -69,7 +69,13 @@ export async function GET(request: NextRequest) {
     }
 
     // 4. Create session and set cookie
-    const sessionToken = createSessionToken({ userId: user.id, email: user.email });
+    const sessionToken = createSessionToken({
+      userId: user.id,
+      email: user.email,
+      name: user.name,
+      avatarUrl: user.avatarUrl,
+      createdAt: user.createdAt,
+    });
     const response = NextResponse.redirect(new URL("/", request.url));
     
     response.cookies.set("atlas_session", sessionToken, {

@@ -38,7 +38,12 @@ export async function POST(request: NextRequest) {
 
     createUser(newUser);
 
-    const token = createSessionToken({ userId: newUser.id, email: newUser.email });
+    const token = createSessionToken({
+      userId: newUser.id,
+      email: newUser.email,
+      name: newUser.name,
+      createdAt: newUser.createdAt,
+    });
 
     const response = NextResponse.json({
       success: true,

@@ -19,7 +19,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid email or password.' }, { status: 401 });
     }
 
-    const token = createSessionToken({ userId: user.id, email: user.email });
+    const token = createSessionToken({
+      userId: user.id,
+      email: user.email,
+      name: user.name,
+      createdAt: user.createdAt,
+    });
 
     const response = NextResponse.json({
       success: true,
