@@ -1,6 +1,6 @@
 # Engineering Execution Kernel v3.0
 
-EEK v3.0 is the project’s error diagnosis and repair pipeline. It is implemented as executable modules, not as instructions asking a model to pretend that commands were run.
+EEK v1.0 is the project’s error diagnosis and repair pipeline. It is implemented as executable modules, not as instructions asking a model to pretend that commands were run.
 
 ## Purpose
 
