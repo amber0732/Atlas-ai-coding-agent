@@ -6,6 +6,8 @@ import { runEek } from "../src/eek/orchestrator.mjs";
 import { applyCandidateEdits } from "../src/eek/validator.mjs";
 import { triage } from "../src/eek/triage.mjs";
 
+console.log("Running EEK v1.0 Kernel Test Suite...");
+
 assert.equal(triage("Cannot find name UserId").level, "trivial");
 assert.equal(triage("An intermittent race condition appears between two workers").level, "complex");
 assert.equal(triage("The search result is wrong for one account").level, "standard");

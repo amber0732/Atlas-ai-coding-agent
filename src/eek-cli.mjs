@@ -28,7 +28,7 @@ async function main() {
   const traceLogger = await createTraceLogger(options.traceFile);
 
   if (options.json) {
-    console.log(JSON.stringify({ type: "phase_start", phase: "Initializing Kernel", message: "Starting EEK v3.0 kernel..." }));
+    console.log(JSON.stringify({ type: "phase_start", phase: "Initializing Kernel", message: "Starting EEK v1.0 kernel..." }));
   }
 
   const result = await runEek({
@@ -103,7 +103,7 @@ function positiveInt(value, fallback) {
 }
 
 function printHelp() {
-  console.log(`EEK v3.0 diagnosis and repair agent
+  console.log(`EEK v1.0 diagnosis and repair agent
 
 Usage:
   npm run eek -- --dry-run --error "test is failing" --command "npm test"

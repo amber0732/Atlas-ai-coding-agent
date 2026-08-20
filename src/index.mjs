@@ -322,7 +322,7 @@ Project context:
 ${projectContext || "(No project context provided.)"}
 
 Required behavior:
-- Use EOS v2.0.
+- Use EOS v1.0.
 - Keep the answer concise unless the problem requires depth.
 - Identify facts, assumptions, root cause, solution, validation, risks, and confidence only where useful.
 - Do not invent verification.`;

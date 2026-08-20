@@ -1,4 +1,4 @@
-// server.js - EEK v3.0 web demo server (hackathon edition)
+// server.js - EEK v1.0 web demo server (hackathon edition)
 // No build step, no React. Just Express + the existing CLI as a child process.
 import "dotenv/config";
 import { createRequire } from "node:module";

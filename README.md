@@ -16,6 +16,6 @@
 
 ### 🛠️ Tech Stack
 - **Framework**: Next.js (App Router) & TypeScript
-- **Kernel**: EEK v3.0 Autonomous Agent Engine
+- **Kernel**: EEK v1.0 Autonomous Agent Engine
 - **Tooling**: Octokit REST SDK, Tavily Search API
 - **Auth & Crypto**: AES-256-GCM, Argon2/Bcrypt, JWT HTTP-Only Cookies

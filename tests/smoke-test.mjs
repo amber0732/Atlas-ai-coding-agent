@@ -26,7 +26,7 @@ for (const file of requiredFiles) {
 
 const prompt = await readFile(path.join(root, "prompts/eos-v2.md"), "utf8");
 for (const phrase of [
-  "EOS v2.0",
+  "EOS v1.0",
   "Token Discipline",
   "Confidence",
   "Playbook Selection",

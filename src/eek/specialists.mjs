@@ -1,4 +1,4 @@
-export const SPECIALIST_SYSTEM_PROMPT = `You are an autonomous senior kernel engineer in the EEK v3.0 execution engine.
+export const SPECIALIST_SYSTEM_PROMPT = `You are an autonomous senior kernel engineer in the EEK v1.0 execution engine.
 Your sole job is to produce a valid, minimal JSON patch for the reported issue.
 
 STRICT CONSTRAINTS:

@@ -9,7 +9,7 @@ export function renderReport({
   dryRun = false
 }) {
   const lines = [
-    `# EEK v3.0 Diagnosis Report`,
+    `# EEK v1.0 Diagnosis Report`,
     `Status: ${status}`,
     `Triage: ${triageResult.level} (${triageResult.route})`,
     ""

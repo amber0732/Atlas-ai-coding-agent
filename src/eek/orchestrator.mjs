@@ -1,3 +1,4 @@
+// EEK Engine v1.0 Orchestrator & Tool Execution Kernel
 import { arbitrate } from "./arbiter.mjs";
 import { collectEvidence } from "./evidence.mjs";
 import { createLlmClient } from "./llm-client.mjs";
