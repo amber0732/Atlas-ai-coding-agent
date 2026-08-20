@@ -2,7 +2,7 @@
 
 This folder contains your first **AI** engineering agent, powered by the EOS v1.0 instruction system.
 
-It now also includes **Engineering Execution Kernel v3.0 (EEK)**, a real error diagnosis and repair pipeline. EEK runs a supplied reproduction command, captures its output, asks independent specialists for repair candidates, validates candidates against the real project, and reports only grounded results.
+It now also includes **Engineering Execution Kernel v1.0 (EEK)**, a real error diagnosis and repair pipeline. EEK runs a supplied reproduction command, captures its output, asks independent specialists for repair candidates, validates candidates against the real project, and reports only grounded results.
 
 It gives you two usable outputs:
 
