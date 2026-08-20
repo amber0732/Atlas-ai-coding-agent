@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EEK v1.0 — Autonomous Bug Diagnosis</title>
+  <meta name="description" content="EEK v1.0 autonomous bug diagnosis and repair agent — hackathon demo" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0a0d12;
+      --surface:   #111520;
+      --surface2:  #171c2a;
+      --border:    #1e2740;
+      --accent:    #3b82f6;
+      --accent2:   #818cf8;
+      --green:     #22d3a8;
+      --red:       #f43f5e;
+      --yellow:    #fbbf24;
+      --text:      #e2e8f0;
+      --muted:     #64748b;
+      --mono:      "JetBrains Mono", "Fira Code", monospace;
+      --sans:      "Inter", system-ui, sans-serif;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    /* ---- Layout ---- */
+    .shell {
+      min-height: 100vh;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+    }
+
+    /* ---- Header ---- */
+    header {
+      background: linear-gradient(135deg, #0f172a 0%, #111827 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 18px 32px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .logo-icon {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--mono);
+      font-weight: 700;
+      font-size: 13px;
+      color: #fff;
+      flex-shrink: 0;
+    }
+    .logo-text { font-family: var(--mono); font-size: 15px; font-weight: 600; }
+    .logo-version {
+      font-size: 11px;
+      background: rgba(59,130,246,.15);
+      color: var(--accent2);
+      border: 1px solid rgba(99,102,241,.3);
+      border-radius: 4px;
+      padding: 1px 7px;
+      margin-left: 4px;
+    }
+    .header-right {
+      margin-left: auto;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .status-dot {
+      width: 8px; height: 8px;
+      background: var(--green);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--green);
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+    .status-label { font-size: 12px; color: var(--muted); font-family: var(--mono); }
+
+    /* ---- Main ---- */
+    main {
+      display: grid;
+      grid-template-columns: 400px 1fr;
+      gap: 0;
+      overflow: hidden;
+    }
+
+    /* ---- Panel ---- */
+    .panel {
+      padding: 28px 24px;
+      border-right: 1px solid var(--border);
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .panel-title {
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      color: var(--muted);
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--muted);
+      margin-bottom: 6px;
+      font-family: var(--mono);
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+
+    select, input[type="text"], textarea {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 13px;
+      padding: 10px 12px;
+      outline: none;
+      transition: border-color .2s, box-shadow .2s;
+      appearance: none;
+    }
+    select:focus, input[type="text"]:focus, textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(59,130,246,.15);
+    }
+    textarea {
+      resize: vertical;
+      min-height: 100px;
+      line-height: 1.5;
+    }
+    /* Custom select arrow */
+    .select-wrap { position: relative; }
+    .select-wrap::after {
+      content: "▾";
+      position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+      color: var(--muted);
+      pointer-events: none;
+    }
+
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 8px;
+      font-family: var(--mono);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .2s;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+      color: #fff;
+      width: 100%;
+      position: relative;
+      overflow: hidden;
+    }
+    .btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 20px rgba(59,130,246,.4);
+    }
+    .btn:active:not(:disabled) { transform: translateY(0); }
+    .btn:disabled {
+      opacity: .6;
+      cursor: not-allowed;
+    }
+    .btn .btn-spinner {
+      width: 14px; height: 14px;
+      border: 2px solid rgba(255,255,255,.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      display: none;
+    }
+    .btn.loading .btn-spinner { display: block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ---- Status ticker ---- */
+    .status-ticker {
+      display: none;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px 14px;
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--accent2);
+      gap: 8px;
+      align-items: center;
+    }
+    .status-ticker.visible { display: flex; }
+    .ticker-dot {
+      width: 6px; height: 6px;
+      background: var(--accent2);
+      border-radius: 50%;
+      animation: pulse .8s ease-in-out infinite;
+      flex-shrink: 0;
+    }
+
+    /* ---- Output pane ---- */
+    .output-pane {
+      padding: 28px 28px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .output-placeholder {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      color: var(--muted);
+    }
+    .output-placeholder .ph-icon {
+      font-size: 48px;
+      opacity: .3;
+    }
+    .output-placeholder p {
+      font-family: var(--mono);
+      font-size: 13px;
+    }
+
+    /* ---- Result cards ---- */
+    .result { display: none; flex-direction: column; gap: 20px; }
+    .result.visible { display: flex; }
+
+    .badge-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-family: var(--mono);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: .05em;
+    }
+    .badge.verified {
+      background: rgba(34,211,168,.12);
+      color: var(--green);
+      border: 1px solid rgba(34,211,168,.3);
+    }
+    .badge.escalated {
+      background: rgba(244,63,94,.12);
+      color: var(--red);
+      border: 1px solid rgba(244,63,94,.3);
+    }
+    .badge.unknown {
+      background: rgba(251,191,36,.12);
+      color: var(--yellow);
+      border: 1px solid rgba(251,191,36,.3);
+    }
+    .badge-icon { font-size: 16px; }
+    .rounds-tag {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--muted);
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 4px 10px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .card-header {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .card-header .dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .dot-green { background: var(--green); }
+    .dot-blue  { background: var(--accent); }
+    .dot-red   { background: var(--red); }
+    .card-body {
+      padding: 14px 16px;
+      font-size: 13px;
+      line-height: 1.7;
+      white-space: pre-wrap;
+    }
+    .card-body.mono { font-family: var(--mono); }
+
+    pre.evidence {
+      background: #080b10;
+      border-radius: 0;
+      padding: 14px 16px;
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 1.6;
+      overflow-x: auto;
+      color: #a3e635;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    pre.evidence.stderr-text { color: #fca5a5; }
+
+    /* ---- Collapsible raw report ---- */
+    details.raw {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    details.raw summary {
+      padding: 12px 16px;
+      cursor: pointer;
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--muted);
+      list-style: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      user-select: none;
+      transition: background .15s;
+    }
+    details.raw summary:hover { background: var(--surface2); }
+    details.raw summary::before { content: "▶"; font-size: 10px; transition: transform .2s; }
+    details.raw[open] summary::before { transform: rotate(90deg); }
+    details.raw pre {
+      background: #080b10;
+      padding: 16px;
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 1.6;
+      color: #94a3b8;
+      white-space: pre-wrap;
+      word-break: break-all;
+      overflow-x: auto;
+      border-top: 1px solid var(--border);
+    }
+
+    /* ---- Error box ---- */
+    .error-box {
+      display: none;
+      background: rgba(244,63,94,.08);
+      border: 1px solid rgba(244,63,94,.3);
+      border-radius: 8px;
+      padding: 14px 16px;
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--red);
+    }
+    .error-box.visible { display: block; }
+
+    /* ---- Footer ---- */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 10px 32px;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    footer span { color: var(--accent2); }
+
+    /* ---- Responsive ---- */
+    @media (max-width: 768px) {
+      main { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+      .panel { border-right: none; border-bottom: 1px solid var(--border); }
+    }
+  </style>
+</head>
+<body>
+<div class="shell">
+  <header>
+    <div class="logo">
+      <div class="logo-icon">EEK</div>
+      <span class="logo-text">Autonomous Bug Diagnosis</span>
+      <span class="logo-version">v3.0</span>
+    </div>
+    <div class="header-right">
+      <div class="status-dot"></div>
+      <span class="status-label">agent ready</span>
+    </div>
+  </header>
+
+  <main>
+    <!-- ---- Left panel: controls ---- -->
+    <div class="panel">
+      <p class="panel-title">⚙ Diagnosis Config</p>
+
+      <div>
+        <label for="projectSelect">Demo Project</label>
+        <div class="select-wrap">
+          <select id="projectSelect">
+            <option value="add-bug">add-bug — add(a,b) returns a-b</option>
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <label for="errorInput">Error Description</label>
+        <textarea id="errorInput" rows="5">The add() function returns the wrong result. add(2, 3) returns -1 instead of 5. It looks like it's doing subtraction instead of addition.</textarea>
+      </div>
+
+      <div>
+        <label for="commandInput">Reproduction Command</label>
+        <input type="text" id="commandInput" value="node test.mjs" />
+      </div>
+
+      <button class="btn" id="diagnoseBtn" onclick="runDiagnosis()">
+        <div class="btn-spinner" id="btnSpinner"></div>
+        <span id="btnLabel">⚡ Diagnose</span>
+      </button>
+
+      <div class="status-ticker" id="statusTicker">
+        <div class="ticker-dot"></div>
+        <span id="tickerText">Initializing...</span>
+      </div>
+    </div>
+
+    <!-- ---- Right panel: output ---- -->
+    <div class="output-pane" id="outputPane">
+      <!-- Placeholder -->
+      <div class="output-placeholder" id="placeholder">
+        <div class="ph-icon">🔍</div>
+        <p>Configure a demo project and click Diagnose</p>
+        <p style="font-size:11px;margin-top:-4px;opacity:.6">EEK will reproduce the bug, consult LLM specialists, and validate a fix</p>
+      </div>
+
+      <!-- Error box -->
+      <div class="error-box" id="errorBox"></div>
+
+      <!-- Result -->
+      <div class="result" id="result">
+        <div class="badge-row">
+          <div class="badge" id="statusBadge"></div>
+          <span class="rounds-tag" id="roundsTag"></span>
+        </div>
+
+        <div class="card" id="diagnosisCard">
+          <div class="card-header"><div class="dot dot-blue"></div>Diagnosis</div>
+          <div class="card-body" id="diagnosisBody"></div>
+        </div>
+
+        <div class="card" id="evidenceCard">
+          <div class="card-header"><div class="dot dot-green"></div>Validation stdout</div>
+          <pre class="evidence" id="evidenceStdout"></pre>
+          <div class="card-header" style="border-top:1px solid var(--border)"><div class="dot dot-red"></div>Validation stderr</div>
+          <pre class="evidence stderr-text" id="evidenceStderr"></pre>
+        </div>
+
+        <details class="raw" id="rawDetails">
+          <summary>Raw Report</summary>
+          <pre id="rawPre"></pre>
+        </details>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    EEK v1.0 &nbsp;|&nbsp; <span>Powered by OpenAI</span> &nbsp;|&nbsp; Hackathon Demo &nbsp;|&nbsp; POST /api/diagnose
+  </footer>
+</div>
+
+<script>
+  const TICKER_MESSAGES = [
+    "Reproducing bug...",
+    "Collecting evidence...",
+    "Consulting specialists...",
+    "Evaluating candidates...",
+    "Validating fix..."
+  ];
+  let tickerInterval = null;
+  let tickerIndex = 0;
+
+  function startTicker() {
+    const ticker = document.getElementById("statusTicker");
+    const tickerText = document.getElementById("tickerText");
+    ticker.classList.add("visible");
+    tickerIndex = 0;
+    tickerText.textContent = TICKER_MESSAGES[0];
+    tickerInterval = setInterval(() => {
+      tickerIndex = (tickerIndex + 1) % TICKER_MESSAGES.length;
+      tickerText.textContent = TICKER_MESSAGES[tickerIndex];
+    }, 4000);
+  }
+
+  function stopTicker() {
+    if (tickerInterval) { clearInterval(tickerInterval); tickerInterval = null; }
+    document.getElementById("statusTicker").classList.remove("visible");
+  }
+
+  function setLoading(on) {
+    const btn = document.getElementById("diagnoseBtn");
+    const label = document.getElementById("btnLabel");
+    const spinner = document.getElementById("btnSpinner");
+    btn.disabled = on;
+    btn.classList.toggle("loading", on);
+    label.textContent = on ? "Running EEK..." : "⚡ Diagnose";
+    spinner.style.display = on ? "block" : "none";
+    if (on) startTicker(); else stopTicker();
+  }
+
+  function showError(msg) {
+    const box = document.getElementById("errorBox");
+    box.textContent = "Error: " + msg;
+    box.classList.add("visible");
+  }
+
+  function clearError() {
+    document.getElementById("errorBox").classList.remove("visible");
+  }
+
+  function showResult(data) {
+    // Hide placeholder, show result
+    document.getElementById("placeholder").style.display = "none";
+    document.getElementById("result").classList.add("visible");
+
+    // Status badge
+    const badge = document.getElementById("statusBadge");
+    const s = (data.status || "unknown").toLowerCase();
+    badge.className = "badge " + (s === "verified" ? "verified" : s === "escalated" ? "escalated" : "unknown");
+    if (s === "verified") {
+      badge.innerHTML = '<span class="badge-icon">✅</span> VERIFIED';
+    } else if (s === "escalated") {
+      badge.innerHTML = '<span class="badge-icon">🚨</span> ESCALATED';
+    } else {
+      badge.innerHTML = '<span class="badge-icon">⚠</span> ' + s.toUpperCase();
+    }
+
+    // Rounds
+    const roundsTag = document.getElementById("roundsTag");
+    roundsTag.textContent = data.retryRounds != null
+      ? `${data.retryRounds} retry round${data.retryRounds === 1 ? "" : "s"}`
+      : "rounds: n/a";
+
+    // Diagnosis
+    document.getElementById("diagnosisBody").textContent = data.diagnosis || "—";
+
+    // Evidence
+    const ev = data.validationEvidence || {};
+    document.getElementById("evidenceStdout").textContent = ev.stdout || "(none)";
+    document.getElementById("evidenceStderr").textContent = ev.stderr || "(none)";
+
+    // Raw report
+    document.getElementById("rawPre").textContent = data.rawReport || "";
+  }
+
+  async function runDiagnosis() {
+    clearError();
+    document.getElementById("result").classList.remove("visible");
+    document.getElementById("placeholder").style.display = "";
+    setLoading(true);
+
+    const projectKey = document.getElementById("projectSelect").value;
+    const error = document.getElementById("errorInput").value.trim();
+    const command = document.getElementById("commandInput").value.trim();
+
+    if (!error || !command) {
+      showError("Please fill in the error description and command.");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const resp = await fetch("/api/diagnose", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ projectKey, error, command })
+      });
+      const data = await resp.json();
+      if (!resp.ok) {
+        showError(data.error || resp.statusText);
+      } else {
+        document.getElementById("placeholder").style.display = "none";
+        showResult(data);
+      }
+    } catch (err) {
+      showError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+</script>
+</body>
+</html>

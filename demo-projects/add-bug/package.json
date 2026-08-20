@@ -1,0 +1,10 @@
+{
+  "name": "add-bug-demo",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Demo project: add(a,b) returns a-b instead of a+b",
+  "scripts": {
+    "test": "node test.mjs"
+  }
+}

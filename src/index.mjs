@@ -77,7 +77,10 @@ async function main() {
     DEFAULT_MAX_OUTPUT_TOKENS
   );
 
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+  const endpoint = process.env.OPENAI_API_BASE ||
+    (apiKey.startsWith("nvapi-") ? "https://integrate.api.nvidia.com/v1/chat/completions" : "https://api.openai.com/v1/chat/completions");
+
+  const response = await fetch(endpoint, {
     method: "POST",
     headers: {
       "Authorization": `Bearer ${apiKey}`,

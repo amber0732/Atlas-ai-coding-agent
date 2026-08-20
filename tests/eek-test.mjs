@@ -65,6 +65,29 @@ assert.equal(applied.status, "verified");
 assert.equal(applied.commitResult.applied, true);
 assert.equal(await readFile(failingTarget, "utf8"), "good");
 
+// Test single patch contract schema
+import { parseCandidate, SPECIALIST_SYSTEM_PROMPT } from "../src/eek/specialists.mjs";
+assert.ok(SPECIALIST_SYSTEM_PROMPT.includes("JSON OUTPUT SCHEMA"));
+
+const singlePatchCandidateRaw = JSON.stringify({
+  target_file: "sample.txt",
+  reasoning_summary: "Fix value from bad to good",
+  action: "modify",
+  patch: "-bad\n+good"
+});
+const parsed = parseCandidate(singlePatchCandidateRaw);
+assert.equal(parsed.edits[0].path, "sample.txt");
+assert.equal(parsed.edits[0].before, "bad");
+assert.equal(parsed.edits[0].after, "good");
+import { extractRepoName } from "../src/eek/orchestrator.mjs";
+assert.equal(extractRepoName("Create a repository called atlas-agent-test"), "atlas-agent-test");
+assert.equal(extractRepoName("Create a new public repo named 'data-scraper'"), "data-scraper");
+assert.equal(extractRepoName("Make a GitHub repo `auth-service-v2`"), "auth-service-v2");
+assert.equal(extractRepoName("Create a new repo backend-api"), "backend-api");
+assert.equal(extractRepoName("Create a new repository"), "atlas-generated-repo");
+
 await rm(temporaryRoot, { recursive: true, force: true });
 await rm(failingProject, { recursive: true, force: true });
 console.log("EEK tests passed.");
+
+

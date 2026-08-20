@@ -12,28 +12,48 @@ main().catch((error) => {
 
 async function main() {
   const options = parseArgs(process.argv.slice(2));
-  if (options.help || (!options.error && !options.file)) {
+  const envBug = process.env.BUG_REPORT || "";
+  const envCmd = process.env.REPRO_CMD || "";
+
+  if (options.help || (!options.error && !options.file && !envBug)) {
     printHelp();
     process.exitCode = options.help ? 0 : 1;
     return;
   }
 
-  const bugReport = [options.error, options.file ? await readFile(path.resolve(options.file), "utf8") : ""]
+  const bugReport = [envBug || options.error, options.file ? await readFile(path.resolve(options.file), "utf8") : ""]
     .filter(Boolean)
     .join("\n\n");
+  const reproCommand = envCmd || options.command;
   const traceLogger = await createTraceLogger(options.traceFile);
+
+  if (options.json) {
+    console.log(JSON.stringify({ type: "phase_start", phase: "Initializing Kernel", message: "Starting EEK v3.0 kernel..." }));
+  }
+
   const result = await runEek({
     projectPath: options.project,
     bugReport,
-    reproCommand: options.command,
-    validationCommand: options.validate || options.command,
+    reproCommand,
+    validationCommand: options.validate || reproCommand,
     timeoutMs: options.timeoutMs,
     maxRetries: options.maxRetries,
     dryRun: options.dryRun,
     apply: options.apply,
     traceLogger
   });
-  console.log(result.report);
+
+  if (options.json) {
+    console.log(JSON.stringify({
+      type: result.status === "verified" ? "success" : "escalated",
+      phase: "Completed",
+      message: result.report,
+      result
+    }));
+  } else {
+    console.log(result.report);
+  }
+
   if (result.status === "escalated") process.exitCode = 2;
 }
 
@@ -45,6 +65,7 @@ function parseArgs(args) {
     error: "",
     file: "",
     help: false,
+    json: false,
     maxRetries: 3,
     project: process.cwd(),
     timeoutMs: 60_000,
@@ -57,6 +78,7 @@ function parseArgs(args) {
     if (arg === "--help" || arg === "-h") options.help = true;
     else if (arg === "--dry-run") options.dryRun = true;
     else if (arg === "--apply") options.apply = true;
+    else if (arg === "--json") options.json = true;
     else if (arg === "--error") options.error = required(args, ++index, arg);
     else if (arg === "--file") options.file = required(args, ++index, arg);
     else if (arg === "--project") options.project = path.resolve(required(args, ++index, arg));
