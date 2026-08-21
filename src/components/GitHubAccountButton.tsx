@@ -69,7 +69,7 @@ export default function GitHubAccountButton() {
 
   return (
     <a
-      href="/api/auth/github/login"
+      href="/api/auth/github"
       className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#161b22] hover:bg-[#21262d] border border-slate-700 text-white text-xs font-medium transition shadow-sm hover:border-slate-500"
     >
       <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
