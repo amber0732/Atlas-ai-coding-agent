@@ -1,14 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
-  const rootUrl = "https://accounts.google.com/o/oauth2/v2/auth";
-  const clientId = process.env.GOOGLE_CLIENT_ID || "";
-  const { origin } = new URL(request.url);
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || origin;
-  const redirectUri = `${appUrl}/api/auth/google/callback`;
+  // 1. Determine canonical base URL
+  const isDev = process.env.NODE_ENV === "development";
+  const canonicalDomain = process.env.NEXT_PUBLIC_APP_URL || "https://atlas-ai-coding-agent-ten.vercel.app";
+  
+  const baseUrl = isDev ? "http://localhost:3000" : canonicalDomain;
+  
+  // 2. Strict, fixed callback URI
+  const redirectUri = `${baseUrl}/api/auth/google/callback`;
 
+  // 3. Construct Google OAuth Authorization URL
   const params = new URLSearchParams({
-    client_id: clientId,
+    client_id: process.env.GOOGLE_CLIENT_ID || "",
     redirect_uri: redirectUri,
     response_type: "code",
     scope: "openid email profile",
@@ -16,6 +20,7 @@ export async function GET(request: NextRequest) {
     prompt: "consent",
   });
 
-  return NextResponse.redirect(`${rootUrl}?${params.toString()}`);
+  return NextResponse.redirect(`https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`);
 }
+
 

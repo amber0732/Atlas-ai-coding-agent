@@ -14,25 +14,24 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const clientId = process.env.GOOGLE_CLIENT_ID || "";
-    const clientSecret = process.env.GOOGLE_CLIENT_SECRET || "";
-    const { origin } = new URL(request.url);
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || origin;
+    const isDev = process.env.NODE_ENV === 'development';
+    const canonicalDomain = process.env.NEXT_PUBLIC_APP_URL || 'https://atlas-ai-coding-agent-ten.vercel.app';
+    const redirectUri = `${isDev ? 'http://localhost:3000' : canonicalDomain}/api/auth/google/callback`;
 
     // 1. Swap auth code for Google access token
-    const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({
         code,
-        client_id: clientId,
-        client_secret: clientSecret,
-        redirect_uri: `${appUrl}/api/auth/google/callback`,
-        grant_type: "authorization_code",
+        client_id: process.env.GOOGLE_CLIENT_ID!,
+        client_secret: process.env.GOOGLE_CLIENT_SECRET!,
+        redirect_uri: redirectUri,
+        grant_type: 'authorization_code',
       }),
     });
 
-    const tokenData = await tokenRes.json();
+    const tokenData = await tokenResponse.json();
 
     if (!tokenData.access_token) {
       console.error("[Google Auth Error]: No access token returned", tokenData);
