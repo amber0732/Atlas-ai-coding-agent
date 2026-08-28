@@ -1,6 +1,6 @@
 export function createLlmClient({
   apiKey = process.env.OPENAI_API_KEY,
-  model = process.env.GPT_MODEL || process.env.OPENAI_MODEL,
+  model = process.env.NVIDIA_MODEL_NAME || process.env.GPT_MODEL || process.env.OPENAI_MODEL || "meta/llama-3.3-70b-instruct",
   endpoint = process.env.OPENAI_API_BASE || (process.env.OPENAI_API_KEY?.startsWith("nvapi-") ? "https://integrate.api.nvidia.com/v1/chat/completions" : "https://api.openai.com/v1/chat/completions")
 } = {}) {
   return {

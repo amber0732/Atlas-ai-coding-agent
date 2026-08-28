@@ -78,7 +78,7 @@ export async function callLLM({ apiKey, baseURL, model, messages, config = {}, r
   const key = apiKey || process.env.NVIDIA_API_KEY || process.env.OPENAI_API_KEY;
 
   const payload = {
-    model: model || 'z-ai/glm-5.2',
+    model: model || process.env.NVIDIA_MODEL_NAME || "meta/llama-3.3-70b-instruct",
     messages,
     max_tokens: config?.max_tokens,
     temperature: config?.temperature,
@@ -237,7 +237,14 @@ export async function runEEKOrchestrator({
 }) {
   const effectiveQuery = String(prompt || query || "").trim();
   const lower = effectiveQuery.toLowerCase();
-  const effectiveModel = model || credentials?.model || process.env.GPT_MODEL || "meta/llama-3.1-70b-instruct";
+  const modelName =
+    process.env.NVIDIA_MODEL_NAME ||
+    process.env.NEXT_PUBLIC_DEFAULT_MODEL ||
+    process.env.GPT_MODEL ||
+    "meta/llama-3.3-70b-instruct";
+  const rawModel = model || credentials?.model;
+  const effectiveModel =
+    rawModel && !rawModel.includes("8b-instruct") ? rawModel : modelName;
   const apiKey = credentials?.apiKey || process.env.NVIDIA_API_KEY || process.env.OPENAI_API_KEY;
   const baseURL = credentials?.baseURL || process.env.OPENAI_API_BASE ||
     (apiKey?.startsWith("nvapi-") ? "https://integrate.api.nvidia.com/v1" : "https://api.openai.com/v1");

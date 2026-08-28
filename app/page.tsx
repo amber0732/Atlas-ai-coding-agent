@@ -124,7 +124,7 @@ export default function CombinedDashboard() {
   const [currentPromptQuery, setCurrentPromptQuery] = useState("");
 
   // Model settings - wired to SettingsView and /api/chat
-  const [selectedModel, setSelectedModel] = useState("meta/llama-3.1-8b-instruct");
+  const [selectedModel, setSelectedModel] = useState(process.env.NEXT_PUBLIC_DEFAULT_MODEL || "meta/llama-3.3-70b-instruct");
   const [maxOutputTokens, setMaxOutputTokens] = useState("2048");
 
   // Diagnosis Execution State
@@ -139,6 +139,13 @@ export default function CombinedDashboard() {
   useEffect(() => {
     logsEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [logs]);
+
+  // Sanitize any legacy 8b model selection from stale client states
+  useEffect(() => {
+    if (selectedModel && selectedModel.includes("8b-instruct")) {
+      setSelectedModel(process.env.NEXT_PUBLIC_DEFAULT_MODEL || "meta/llama-3.3-70b-instruct");
+    }
+  }, [selectedModel]);
 
   // User Authentication State
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);

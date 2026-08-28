@@ -126,9 +126,11 @@ app.post("/api/chat", async (req, res) => {
     }
   }
 
-  // Model priority: request body → env var → hardcoded fallback
+  // Model priority: request body (if valid & not 8b) → env var → fallback
   const apiKey = process.env.OPENAI_API_KEY;
-  const model = req.body?.model || process.env.GPT_MODEL || "z-ai/glm-5.2";
+  const modelName = process.env.NVIDIA_MODEL_NAME || process.env.NEXT_PUBLIC_DEFAULT_MODEL || process.env.GPT_MODEL || "meta/llama-3.3-70b-instruct";
+  const rawModel = req.body?.model;
+  const model = (rawModel && !rawModel.includes("8b-instruct")) ? rawModel : modelName;
   const maxTokens = parseInt(process.env.GPT_MAX_OUTPUT_TOKENS || "4096", 10);
   const endpoint = process.env.OPENAI_API_BASE ||
     (apiKey?.startsWith("nvapi-")
@@ -138,7 +140,7 @@ app.post("/api/chat", async (req, res) => {
   console.log(`[DEBUG-1] request_target: server.js /api/chat`);
   console.log(`[DEBUG-2] task_context:`, JSON.stringify({
     model_name: model,
-    model_source: req.body?.model ? "request_body" : process.env.GPT_MODEL ? "env_var" : "fallback",
+    model_source: req.body?.model ? "request_body" : (process.env.NVIDIA_MODEL_NAME || process.env.GPT_MODEL) ? "env_var" : "fallback",
     maxTokens,
     messagesCount: formattedMessages.length,
     endpoint
@@ -193,7 +195,7 @@ app.post("/api/diagnose", async (req, res) => {
     projectKey,
     errorSnippet: error?.slice(0, 100),
     command,
-    envModel: process.env.GPT_MODEL,
+    envModel: process.env.NVIDIA_MODEL_NAME || process.env.GPT_MODEL || "meta/llama-3.3-70b-instruct",
     hasApiKey: Boolean(process.env.OPENAI_API_KEY)
   }));
 

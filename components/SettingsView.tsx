@@ -13,9 +13,8 @@ interface SettingsViewProps {
 }
 
 const MODEL_OPTIONS = [
-  { id: "meta/llama-3.1-8b-instruct", name: "Llama 3.1 8B (Ultra-Fast ⚡)", desc: "Lightning-fast responses (1-3s). Ideal for real-time coding chat and quick answers." },
+  { id: process.env.NEXT_PUBLIC_DEFAULT_MODEL || "meta/llama-3.3-70b-instruct", name: "Llama 3.3 70B Instruct (Primary ⚡)", desc: "State-of-the-art Llama 3.3 intelligence with expanded context handling." },
   { id: "meta/llama-3.1-70b-instruct", name: "Llama 3.1 70B Instruct", desc: "High-capacity reasoning engine for complex architecture & multi-file refactoring." },
-  { id: "meta/llama-3.3-70b-instruct", name: "Llama 3.3 70B Instruct", desc: "State-of-the-art Llama 3.3 intelligence with expanded context handling." },
   { id: "gpt-4o", name: "GPT-4o Agent Engine", desc: "Advanced multimodal reasoning kernel. Requires OpenAI API key." },
 ];
 

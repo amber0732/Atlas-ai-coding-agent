@@ -15,7 +15,22 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const prompt = body?.prompt || body?.error || "";
-    const model = body?.model || process.env.GPT_MODEL || "meta/llama-3.1-70b-instruct";
+
+    // 1. Resolve model name with proper environment variable fallback
+    const modelName =
+      process.env.NVIDIA_MODEL_NAME ||
+      process.env.NEXT_PUBLIC_DEFAULT_MODEL ||
+      process.env.GPT_MODEL ||
+      "meta/llama-3.3-70b-instruct";
+
+    // 2. Prevent client-side stale cached model strings from overriding
+    const selectedModel =
+      body?.model && !body.model.includes("8b-instruct")
+        ? body.model
+        : modelName;
+
+    // Debug log (Check this in Vercel Logs or local terminal)
+    console.log(`[LLM Call] Executing request with model: ${selectedModel}`);
 
     // 1. Extract the authenticated GitHub token from incoming request cookies
     const githubToken = request.cookies.get("atlas_github_token")?.value || null;
@@ -23,7 +38,7 @@ export async function POST(request: NextRequest) {
     // 2. Pass prompt + githubToken into the agent kernel
     const response = await runEEKOrchestrator({
       prompt,
-      model,
+      model: selectedModel,
       githubToken,
     });
 
@@ -36,7 +51,7 @@ export async function POST(request: NextRequest) {
       answer,
       content: answer,
       reply: answer,
-      model,
+      model: selectedModel,
     });
   } catch (error: any) {
     console.error("[Chat Route Error]:", error);

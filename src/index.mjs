@@ -65,12 +65,7 @@ async function main() {
     return;
   }
 
-  const model = process.env.GPT_MODEL || process.env.OPENAI_MODEL;
-  if (!model) {
-    console.error("Missing GPT_MODEL. Set it to a model available in your OpenAI account.");
-    process.exitCode = 1;
-    return;
-  }
+  const model = process.env.NVIDIA_MODEL_NAME || process.env.GPT_MODEL || process.env.OPENAI_MODEL || "meta/llama-3.3-70b-instruct";
 
   const maxOutputTokens = parseInteger(
     process.env.GPT_MAX_OUTPUT_TOKENS,

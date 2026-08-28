@@ -23,7 +23,7 @@ const INFERENCE_STEPS = [
 export const FullscreenThinkingOverlay: React.FC<FullscreenThinkingOverlayProps> = ({
   isOpen,
   promptText = "",
-  modelName = "meta/llama-3.1-70b-instruct",
+  modelName = process.env.NEXT_PUBLIC_DEFAULT_MODEL || "meta/llama-3.3-70b-instruct",
   onMinimize,
   onCancel,
 }) => {
