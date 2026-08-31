@@ -5,6 +5,9 @@ import { createSessionToken } from "@/src/lib/authCrypto.mjs";
 // @ts-ignore
 import { findUserByEmail, createUser } from "@/src/lib/userStore.mjs";
 
+export const maxDuration = 60;
+export const dynamic = "force-dynamic";
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get("code");
@@ -34,7 +37,7 @@ export async function GET(request: NextRequest) {
     const tokenData = await tokenResponse.json();
 
     if (!tokenData.access_token) {
-      console.error("[Google Auth Error]: No access token returned", tokenData);
+      console.error("[Google Auth Callback Error]: Status: 400, Body:", JSON.stringify(tokenData));
       return NextResponse.redirect(new URL("/?auth_error=google_token_failed", request.url));
     }
 
@@ -44,12 +47,15 @@ export async function GET(request: NextRequest) {
     });
 
     if (!userRes.ok) {
+      const errBody = await userRes.text();
+      console.error(`[Google Auth Callback Error]: userinfo failed - Status: ${userRes.status}, Body: ${errBody}`);
       return NextResponse.redirect(new URL("/?auth_error=google_userinfo_failed", request.url));
     }
 
     const profile = await userRes.json();
 
     if (!profile?.email) {
+      console.error("[Google Auth Callback Error]: No email in profile response", profile);
       return NextResponse.redirect(new URL("/?auth_error=google_no_email", request.url));
     }
 
@@ -76,7 +82,7 @@ export async function GET(request: NextRequest) {
       createdAt: user.createdAt,
     });
     const response = NextResponse.redirect(new URL("/", request.url));
-    
+
     response.cookies.set("atlas_session", sessionToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -86,8 +92,13 @@ export async function GET(request: NextRequest) {
     });
 
     return response;
-  } catch (err) {
-    console.error("[Google Auth Callback Error]:", err);
+  } catch (err: any) {
+    console.error("[Google Auth Callback Error]:", {
+      statusCode: err?.status || 500,
+      bodyText: err?.message,
+      stack: err?.stack,
+      rawError: err,
+    });
     return NextResponse.redirect(new URL("/?auth_error=google_failed", request.url));
   }
 }

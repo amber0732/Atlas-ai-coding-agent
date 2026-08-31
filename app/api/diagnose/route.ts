@@ -3,6 +3,8 @@ import { spawn } from 'child_process';
 import path from 'path';
 
 export const runtime = 'nodejs';
+export const maxDuration = 60;
+export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
@@ -74,8 +76,16 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (err: any) {
-    return new Response(JSON.stringify({ error: err.message }), {
-      status: 500,
+    const statusCode = err?.status || err?.statusCode || 500;
+    const bodyText = err?.message || 'Diagnose execution failed';
+    console.error('[Diagnose Route Error]:', {
+      statusCode,
+      bodyText,
+      stack: err?.stack,
+      rawError: err,
+    });
+    return new Response(JSON.stringify({ error: bodyText, statusCode }), {
+      status: statusCode,
       headers: { 'Content-Type': 'application/json' }
     });
   }

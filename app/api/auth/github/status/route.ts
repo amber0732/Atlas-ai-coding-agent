@@ -4,6 +4,9 @@ import { verifySessionToken, decryptSecret } from "@/src/lib/authCrypto.mjs";
 // @ts-ignore
 import { findUserById } from "@/src/lib/userStore.mjs";
 
+export const maxDuration = 60;
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   let token = request.cookies.get("atlas_github_token")?.value;
 
@@ -22,7 +25,10 @@ export async function GET(request: NextRequest) {
   }
 
   if (!token) {
-    return NextResponse.json({ connected: false });
+    return NextResponse.json(
+      { connected: false },
+      { status: 200, headers: { "Content-Type": "application/json" } }
+    );
   }
 
   try {
@@ -34,17 +40,33 @@ export async function GET(request: NextRequest) {
     });
 
     if (!userRes.ok) {
-      return NextResponse.json({ connected: false });
+      const errText = await userRes.text();
+      console.warn(`[GitHub Status Check] Non-OK response [HTTP ${userRes.status}]: ${errText}`);
+      return NextResponse.json(
+        { connected: false },
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
     }
 
     const data = await userRes.json();
-    return NextResponse.json({
-      connected: true,
-      username: data.login,
-      avatarUrl: data.avatar_url,
-      profileUrl: data.html_url,
+    return NextResponse.json(
+      {
+        connected: true,
+        username: data.login,
+        avatarUrl: data.avatar_url,
+        profileUrl: data.html_url,
+      },
+      { status: 200, headers: { "Content-Type": "application/json" } }
+    );
+  } catch (err: any) {
+    console.error("[GitHub Status Error]:", {
+      message: err?.message,
+      stack: err?.stack,
+      rawError: err,
     });
-  } catch {
-    return NextResponse.json({ connected: false });
+    return NextResponse.json(
+      { connected: false },
+      { status: 200, headers: { "Content-Type": "application/json" } }
+    );
   }
 }

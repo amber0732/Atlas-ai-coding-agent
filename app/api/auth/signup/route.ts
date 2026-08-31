@@ -6,6 +6,9 @@ import { hashPassword, createSessionToken } from '@/src/lib/authCrypto.mjs';
 // @ts-ignore
 import { findUserByEmail, createUser } from '@/src/lib/userStore.mjs';
 
+export const maxDuration = 60;
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     const { name, email, password } = await request.json();
@@ -13,14 +16,14 @@ export async function POST(request: NextRequest) {
     if (!email || !password || password.length < 6) {
       return NextResponse.json(
         { error: 'Email and password (min 6 characters) are required.' },
-        { status: 400 }
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
     if (findUserByEmail(email)) {
       return NextResponse.json(
         { error: 'An account with this email already exists.' },
-        { status: 409 }
+        { status: 409, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
@@ -45,10 +48,13 @@ export async function POST(request: NextRequest) {
       createdAt: newUser.createdAt,
     });
 
-    const response = NextResponse.json({
-      success: true,
-      user: { id: newUser.id, name: newUser.name, email: newUser.email },
-    });
+    const response = NextResponse.json(
+      {
+        success: true,
+        user: { id: newUser.id, name: newUser.name, email: newUser.email },
+      },
+      { status: 200, headers: { 'Content-Type': 'application/json' } }
+    );
 
     response.cookies.set('atlas_session', token, {
       httpOnly: true,
@@ -60,6 +66,17 @@ export async function POST(request: NextRequest) {
 
     return response;
   } catch (err: any) {
-    return NextResponse.json({ error: err.message || 'Signup failed' }, { status: 500 });
+    const statusCode = err?.status || err?.statusCode || 500;
+    const bodyText = err?.message || 'Signup failed';
+    console.error('[Auth Signup Error]:', {
+      statusCode,
+      bodyText,
+      stack: err?.stack,
+      rawError: err,
+    });
+    return NextResponse.json(
+      { error: bodyText, statusCode },
+      { status: statusCode, headers: { 'Content-Type': 'application/json' } }
+    );
   }
 }

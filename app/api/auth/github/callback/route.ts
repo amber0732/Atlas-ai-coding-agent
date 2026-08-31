@@ -4,6 +4,9 @@ import { encryptSecret, verifySessionToken } from "@/src/lib/authCrypto.mjs";
 // @ts-ignore
 import { findUserById, updateUser } from "@/src/lib/userStore.mjs";
 
+export const maxDuration = 60;
+export const dynamic = "force-dynamic";
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get("code");
@@ -31,6 +34,7 @@ export async function GET(request: NextRequest) {
     const accessToken = tokenData.access_token;
 
     if (!accessToken) {
+      console.error("[GitHub Callback Error]: Access token missing in exchange payload", tokenData);
       return NextResponse.redirect(new URL("/?auth_error=token_exchange_failed", request.url));
     }
 
@@ -56,7 +60,11 @@ export async function GET(request: NextRequest) {
 
     return response;
   } catch (err: any) {
-    console.error("[GitHub Callback Error]:", err);
+    console.error("[GitHub Callback Error]:", {
+      message: err?.message,
+      stack: err?.stack,
+      rawError: err,
+    });
     return NextResponse.redirect(new URL("/?auth_error=server_error", request.url));
   }
 }

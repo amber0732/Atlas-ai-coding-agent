@@ -74,8 +74,18 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
  * Robust API caller with Exponential Backoff, Jitter, and Rate-Limit (429) self-healing
  */
 export async function callLLM({ apiKey, baseURL, model, messages, config = {}, responseFormat = null, maxRetries = 4 }) {
-  const url = `${baseURL || 'https://integrate.api.nvidia.com/v1'}/chat/completions`;
   const key = apiKey || process.env.NVIDIA_API_KEY || process.env.OPENAI_API_KEY;
+
+  if (!key) {
+    const errorMsg = "Unauthorized: NVIDIA_API_KEY is missing from environment variables.";
+    console.error(`[NVIDIA LLM Error] HTTP 401: ${errorMsg}`);
+    const err = new Error(errorMsg);
+    // @ts-ignore
+    err.status = 401;
+    throw err;
+  }
+
+  const url = `${baseURL || 'https://integrate.api.nvidia.com/v1'}/chat/completions`;
 
   const payload = {
     model: model || process.env.NVIDIA_MODEL_NAME || "meta/llama-3.3-70b-instruct",
@@ -107,10 +117,17 @@ export async function callLLM({ apiKey, baseURL, model, messages, config = {}, r
         return json.choices?.[0]?.message?.content?.trim() || '';
       }
 
+      // Log exact status code and body text for any non-ok response
+      const errorText = await res.text();
+      console.error(`[NVIDIA Remote API Error] Status Code: ${res.status}, Body: ${errorText}`);
+
       // 2. Rate Limit (429) or Transient Server Overload (503/504) handling
       if (res.status === 429 || res.status === 503 || res.status === 504) {
         if (attempt === maxRetries) {
-          throw new Error(`API Rate Limit (429) persisted after ${maxRetries} retries. Please wait 30s.`);
+          const rateErr = new Error(`API Rate Limit (${res.status}) persisted after ${maxRetries} retries: ${errorText}`);
+          // @ts-ignore
+          rateErr.status = res.status;
+          throw rateErr;
         }
 
         // Check if provider supplied a Retry-After header (in seconds)
@@ -131,17 +148,20 @@ export async function callLLM({ apiKey, baseURL, model, messages, config = {}, r
         continue;
       }
 
-      // 3. Unrecoverable Client/Auth Errors (401, 403, 400)
-      const errorText = await res.text();
-      throw new Error(`LLM Inference failed [HTTP ${res.status}]: ${errorText}`);
+      // 3. Unrecoverable Client/Auth/Server Errors (401, 403, 400, 500)
+      const unrecoverableErr = new Error(`LLM Inference failed [HTTP ${res.status}]: ${errorText}`);
+      // @ts-ignore
+      unrecoverableErr.status = res.status;
+      throw unrecoverableErr;
 
     } catch (err) {
       // If network error occurred and retries remain, back off and try again
-      if (attempt < maxRetries && !err.message.includes('HTTP 401') && !err.message.includes('HTTP 400')) {
+      if (attempt < maxRetries && err.status !== 401 && err.status !== 400 && !err.message.includes('HTTP 401') && !err.message.includes('HTTP 400')) {
         const retryDelay = 1000 * Math.pow(2, attempt);
         console.warn(`[EEK Kernel] Network glitch: ${err.message}. Retrying in ${(retryDelay / 1000).toFixed(1)}s...`);
         await sleep(retryDelay);
       } else {
+        console.error(`[NVIDIA Fetch Exception] Status Code: ${err.status || 500}, Message: ${err.message}`);
         throw err;
       }
     }

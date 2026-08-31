@@ -1,11 +1,20 @@
 export function createLlmClient({
-  apiKey = process.env.OPENAI_API_KEY,
+  apiKey = process.env.NVIDIA_API_KEY || process.env.OPENAI_API_KEY,
   model = process.env.NVIDIA_MODEL_NAME || process.env.GPT_MODEL || process.env.OPENAI_MODEL || "meta/llama-3.3-70b-instruct",
-  endpoint = process.env.OPENAI_API_BASE || (process.env.OPENAI_API_KEY?.startsWith("nvapi-") ? "https://integrate.api.nvidia.com/v1/chat/completions" : "https://api.openai.com/v1/chat/completions")
+  endpoint = process.env.OPENAI_API_BASE || ((process.env.NVIDIA_API_KEY || process.env.OPENAI_API_KEY)?.startsWith("nvapi-") ? "https://integrate.api.nvidia.com/v1/chat/completions" : "https://api.openai.com/v1/chat/completions")
 } = {}) {
   return {
     configured: Boolean(apiKey && model),
     async complete({ instructions, input, maxOutputTokens = 1600 }) {
+      if (!apiKey) {
+        const errorMsg = "Unauthorized: NVIDIA_API_KEY is missing from environment variables.";
+        console.error("[llm-client] HTTP 401:", errorMsg);
+        const err = new Error(errorMsg);
+        // @ts-ignore
+        err.status = 401;
+        throw err;
+      }
+
       if (apiKey && model) {
         try {
           const payload = {
@@ -61,16 +70,22 @@ export function createLlmClient({
             throw new Error("Empty content received from LLM completion.");
           } else {
             console.error(`[llm-client] Remote API responded with status ${response.status}: ${text}`);
-            throw new Error(`Remote API responded with status ${response.status}: ${text}`);
+            const err = new Error(`Remote API responded with status ${response.status}: ${text}`);
+            // @ts-ignore
+            err.status = response.status;
+            throw err;
           }
         } catch (err) {
-          console.error("[llm-client] Remote API call failed:", err.message);
+          console.error(`[llm-client] Remote API call failed - Status: ${err.status || 500}, Body/Message: ${err.message}`);
           throw err;
         }
       } else {
         const errorMsg = `API Key or Model missing. apiKey configured: ${Boolean(apiKey)}, model configured: ${Boolean(model)}`;
         console.error("[llm-client]", errorMsg);
-        throw new Error(errorMsg);
+        const err = new Error(errorMsg);
+        // @ts-ignore
+        err.status = 400;
+        throw err;
       }
     }
   };

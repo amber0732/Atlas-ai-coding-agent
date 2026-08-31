@@ -4,6 +4,9 @@ import { verifySessionToken } from "@/src/lib/authCrypto.mjs";
 // @ts-ignore
 import { updateUser } from "@/src/lib/userStore.mjs";
 
+export const maxDuration = 60;
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     // 1. Unlink token from user record in database
@@ -16,10 +19,13 @@ export async function POST(request: NextRequest) {
     }
 
     // 2. Prepare response and delete GitHub cookie
-    const response = NextResponse.json({
-      success: true,
-      message: "GitHub account unlinked successfully.",
-    });
+    const response = NextResponse.json(
+      {
+        success: true,
+        message: "GitHub account unlinked successfully.",
+      },
+      { status: 200, headers: { "Content-Type": "application/json" } }
+    );
 
     response.cookies.set("atlas_github_token", "", {
       httpOnly: true,
@@ -31,9 +37,17 @@ export async function POST(request: NextRequest) {
 
     return response;
   } catch (err: any) {
+    const statusCode = err?.status || err?.statusCode || 500;
+    const bodyText = err?.message || "Failed to disconnect GitHub";
+    console.error("[GitHub Disconnect Error]:", {
+      statusCode,
+      bodyText,
+      stack: err?.stack,
+      rawError: err,
+    });
     return NextResponse.json(
-      { error: err.message || "Failed to disconnect GitHub" },
-      { status: 500 }
+      { error: bodyText, statusCode },
+      { status: statusCode, headers: { "Content-Type": "application/json" } }
     );
   }
 }
