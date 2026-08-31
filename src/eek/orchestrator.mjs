@@ -10,6 +10,24 @@ import { listUserRepos, createRepo, commitFile } from "../tools/githubTools.mjs"
 import { searchRealtimeWeb } from "../tools/searchTools.mjs";
 
 /**
+ * Sanitize model string: reject any legacy 8b-instruct or llama-3.1-8b slug
+ * and return the safe env-configured default instead.
+ * Applied to ALL outgoing API payloads before reaching the NVIDIA endpoint.
+ */
+export function sanitizeModel(modelInput) {
+  const safeDefault = process.env.NVIDIA_MODEL_NAME || "meta/llama-3.3-70b-instruct";
+  if (
+    !modelInput ||
+    typeof modelInput !== "string" ||
+    modelInput.includes("8b-instruct") ||
+    modelInput.includes("llama-3.1-8b")
+  ) {
+    return safeDefault;
+  }
+  return modelInput;
+}
+
+/**
  * Available GitHub actions registered for tool-calling
  */
 export const GITHUB_TOOL_DEFINITIONS = [
@@ -88,7 +106,7 @@ export async function callLLM({ apiKey, baseURL, model, messages, config = {}, r
   const url = `${baseURL || 'https://integrate.api.nvidia.com/v1'}/chat/completions`;
 
   const payload = {
-    model: model || process.env.NVIDIA_MODEL_NAME || "meta/llama-3.3-70b-instruct",
+    model: sanitizeModel(model || process.env.NVIDIA_MODEL_NAME),
     messages,
     max_tokens: config?.max_tokens,
     temperature: config?.temperature,
@@ -257,14 +275,8 @@ export async function runEEKOrchestrator({
 }) {
   const effectiveQuery = String(prompt || query || "").trim();
   const lower = effectiveQuery.toLowerCase();
-  const modelName =
-    process.env.NVIDIA_MODEL_NAME ||
-    process.env.NEXT_PUBLIC_DEFAULT_MODEL ||
-    process.env.GPT_MODEL ||
-    "meta/llama-3.3-70b-instruct";
   const rawModel = model || credentials?.model;
-  const effectiveModel =
-    rawModel && !rawModel.includes("8b-instruct") ? rawModel : modelName;
+  const effectiveModel = sanitizeModel(rawModel);
   const apiKey = credentials?.apiKey || process.env.NVIDIA_API_KEY || process.env.OPENAI_API_KEY;
   const baseURL = credentials?.baseURL || process.env.OPENAI_API_BASE ||
     (apiKey?.startsWith("nvapi-") ? "https://integrate.api.nvidia.com/v1" : "https://api.openai.com/v1");

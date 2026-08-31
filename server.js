@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
+import { sanitizeModel } from "./src/eek/orchestrator.mjs";
 
 // Express is a CJS package; we use createRequire to bridge ESM -> CJS gap.
 const require = createRequire(import.meta.url);
@@ -126,11 +127,10 @@ app.post("/api/chat", async (req, res) => {
     }
   }
 
-  // Model priority: request body (if valid & not 8b) → env var → fallback
+  // Model priority: request body → sanitized through model guard → env fallback
   const apiKey = process.env.OPENAI_API_KEY;
-  const modelName = process.env.NVIDIA_MODEL_NAME || process.env.NEXT_PUBLIC_DEFAULT_MODEL || process.env.GPT_MODEL || "meta/llama-3.3-70b-instruct";
   const rawModel = req.body?.model;
-  const model = (rawModel && !rawModel.includes("8b-instruct")) ? rawModel : modelName;
+  const model = sanitizeModel(rawModel);
   const maxTokens = parseInt(process.env.GPT_MAX_OUTPUT_TOKENS || "4096", 10);
   const endpoint = process.env.OPENAI_API_BASE ||
     (apiKey?.startsWith("nvapi-")

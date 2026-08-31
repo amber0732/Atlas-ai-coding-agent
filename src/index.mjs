@@ -3,6 +3,7 @@ import "dotenv/config";
 import { access, readFile, readdir, stat } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { sanitizeModel } from "./eek/orchestrator.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -65,7 +66,7 @@ async function main() {
     return;
   }
 
-  const model = process.env.NVIDIA_MODEL_NAME || process.env.GPT_MODEL || process.env.OPENAI_MODEL || "meta/llama-3.3-70b-instruct";
+  const model = sanitizeModel(process.env.NVIDIA_MODEL_NAME);
 
   const maxOutputTokens = parseInteger(
     process.env.GPT_MAX_OUTPUT_TOKENS,
@@ -338,4 +339,3 @@ function redact(value) {
     .replace(/(api[_-]?key|token|secret|password)\s*[:=]\s*["']?[^"'\s]+/gi, "$1=[REDACTED]")
     .replace(/Bearer\s+[A-Za-z0-9._~+/-]+=*/gi, "Bearer [REDACTED]");
 }
-

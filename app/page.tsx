@@ -142,7 +142,10 @@ export default function CombinedDashboard() {
 
   // Sanitize any legacy 8b model selection from stale client states
   useEffect(() => {
-    if (selectedModel && selectedModel.includes("8b-instruct")) {
+    if (
+      selectedModel &&
+      (selectedModel.includes("8b-instruct") || selectedModel.includes("llama-3.1-8b"))
+    ) {
       setSelectedModel(process.env.NEXT_PUBLIC_DEFAULT_MODEL || "meta/llama-3.3-70b-instruct");
     }
   }, [selectedModel]);

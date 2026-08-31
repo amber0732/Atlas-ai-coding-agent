@@ -1,10 +1,24 @@
+function sanitizeModel(modelInput) {
+  if (
+    !modelInput ||
+    typeof modelInput !== "string" ||
+    modelInput.includes("8b-instruct") ||
+    modelInput.includes("llama-3.1-8b")
+  ) {
+    return process.env.NVIDIA_MODEL_NAME || "meta/llama-3.3-70b-instruct";
+  }
+  return modelInput;
+}
+
 export function createLlmClient({
   apiKey = process.env.NVIDIA_API_KEY || process.env.OPENAI_API_KEY,
-  model = process.env.NVIDIA_MODEL_NAME || process.env.GPT_MODEL || process.env.OPENAI_MODEL || "meta/llama-3.3-70b-instruct",
+  model = process.env.NVIDIA_MODEL_NAME || "meta/llama-3.3-70b-instruct",
   endpoint = process.env.OPENAI_API_BASE || ((process.env.NVIDIA_API_KEY || process.env.OPENAI_API_KEY)?.startsWith("nvapi-") ? "https://integrate.api.nvidia.com/v1/chat/completions" : "https://api.openai.com/v1/chat/completions")
 } = {}) {
+  // Sanitize the model at construction time
+  const safeModel = sanitizeModel(model);
   return {
-    configured: Boolean(apiKey && model),
+    configured: Boolean(apiKey && safeModel),
     async complete({ instructions, input, maxOutputTokens = 1600 }) {
       if (!apiKey) {
         const errorMsg = "Unauthorized: NVIDIA_API_KEY is missing from environment variables.";
@@ -15,10 +29,10 @@ export function createLlmClient({
         throw err;
       }
 
-      if (apiKey && model) {
+      if (apiKey && safeModel) {
         try {
           const payload = {
-            model,
+            model: safeModel,
             messages: [
               { role: "system", content: instructions },
               { role: "user", content: input }
@@ -28,7 +42,7 @@ export function createLlmClient({
 
           console.log(`[DEBUG-1] request_sent:`, JSON.stringify({
             endpoint,
-            model,
+            model: safeModel,
             instructionsLength: instructions?.length,
             inputLength: input?.length,
             maxOutputTokens
@@ -80,7 +94,7 @@ export function createLlmClient({
           throw err;
         }
       } else {
-        const errorMsg = `API Key or Model missing. apiKey configured: ${Boolean(apiKey)}, model configured: ${Boolean(model)}`;
+        const errorMsg = `API Key or Model missing. apiKey configured: ${Boolean(apiKey)}, model configured: ${Boolean(safeModel)}`;
         console.error("[llm-client]", errorMsg);
         const err = new Error(errorMsg);
         // @ts-ignore
@@ -100,4 +114,3 @@ function redact(value) {
     .replace(/sk-[A-Za-z0-9_-]{20,}/g, "sk-[REDACTED]")
     .replace(/Bearer\s+[A-Za-z0-9._~+/-]+=*/gi, "Bearer [REDACTED]");
 }
-

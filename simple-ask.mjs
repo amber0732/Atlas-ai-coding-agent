@@ -19,12 +19,13 @@
 // It does NOT touch your files or run any commands — it just answers.
 
 import 'dotenv/config';
+import { sanitizeModel } from './src/eek/orchestrator.mjs';
 
 const NVIDIA_BASE_URL = 'https://integrate.api.nvidia.com/v1/chat/completions';
 
 async function ask(question) {
   const apiKey = process.env.OPENAI_API_KEY;
-  const model = process.env.NVIDIA_MODEL_NAME || process.env.GPT_MODEL || "meta/llama-3.3-70b-instruct";
+  const model = sanitizeModel(process.env.NVIDIA_MODEL_NAME);
 
   if (!apiKey) {
     console.error('❌ No API key found. Make sure .env has OPENAI_API_KEY set.');

@@ -5,6 +5,24 @@ import { runEEKOrchestrator } from "@/src/eek/orchestrator.mjs";
 export const maxDuration = 60;
 export const dynamic = "force-dynamic";
 
+/**
+ * Sanitize model string: reject any legacy 8b or llama-3.1-8b slug
+ * and fall back to the safe server-side default.
+ */
+function sanitizeModel(modelInput: string | undefined | null): string {
+  const safeDefault =
+    process.env.NVIDIA_MODEL_NAME || "meta/llama-3.3-70b-instruct";
+  if (
+    !modelInput ||
+    typeof modelInput !== "string" ||
+    modelInput.includes("8b-instruct") ||
+    modelInput.includes("llama-3.1-8b")
+  ) {
+    return safeDefault;
+  }
+  return modelInput;
+}
+
 export async function POST(request: NextRequest) {
   try {
     // 0. Session Auth Guard
@@ -36,18 +54,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const prompt = body?.prompt || body?.error || "";
 
-    // 2. Resolve model name with proper environment variable fallback
-    const modelName =
-      process.env.NVIDIA_MODEL_NAME ||
-      process.env.NEXT_PUBLIC_DEFAULT_MODEL ||
-      process.env.GPT_MODEL ||
-      "meta/llama-3.3-70b-instruct";
-
-    // 3. Prevent client-side stale cached model strings from overriding
-    const selectedModel =
-      body?.model && !body.model.includes("8b-instruct")
-        ? body.model
-        : modelName;
+    // 2. Sanitize + resolve model — blocks any 8b-instruct / llama-3.1-8b leakage
+    const selectedModel = sanitizeModel(body?.model);
 
     // Debug log (Check this in Vercel Logs or local terminal)
     console.log(`[LLM Call] Executing request with model: ${selectedModel}`);
